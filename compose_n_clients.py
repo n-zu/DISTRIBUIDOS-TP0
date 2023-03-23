@@ -6,8 +6,7 @@ if len(sys.argv) != 2:
 
 clients = int(sys.argv[1])
 
-yaml = '''
-version: "3.9"
+yaml = '''version: "3.9"
 name: tp0
 services:
   server:
@@ -19,21 +18,25 @@ services:
       - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
+    volumes:
+      - ./server/config.ini:/config.ini
 '''
 
 for i in range(clients):
     yaml += f'''
-  client{i}:
-    container_name: client{i}
+  client{i+1}:
+    container_name: client{i+1}
     image: client:latest
     entrypoint: /client
     environment:
-      - CLI_ID={i}
+      - CLI_ID={i+1}
       - CLI_LOG_LEVEL=DEBUG
     networks:
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
 '''
 
 yaml += '''
