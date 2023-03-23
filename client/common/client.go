@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -43,27 +44,21 @@ func (c *Client) createClientSocket() error {
 			c.config.ID,
 			err,
 		)
+	} else {
+		log.Debugf("action: connect | result: success | client_id: %v", c.config.ID)
 	}
 	c.conn = conn
 	return nil
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
+func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 	// autoincremental msgID to identify every message sent
 	msgID := 1
 
 loop:
 	// Send messages if the loopLapse threshold has not been surpassed
 	for timeout := time.After(c.config.LoopLapse); ; {
-		select {
-		case <-timeout:
-	        log.Infof("action: timeout_detected | result: success | client_id: %v",
-                c.config.ID,
-            )
-			break loop
-		default:
-		}
 
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
@@ -78,21 +73,24 @@ loop:
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		msgID++
 		c.conn.Close()
-
+		
 		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-                c.config.ID,
-				err,
-			)
+			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v", c.config.ID, err,)
+			log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
 			return
 		}
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-            c.config.ID,
-            msg,
-        )
+		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v", c.config.ID, msg, )
+		log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
 
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
+		select {
+			case <-timeout:
+				log.Infof("action: timeout_detected | result: success | client_id: %v",c.config.ID,)
+				break loop
+			case <-sigChan:
+				log.Infof("action: sigterm_detected | result: shutdown | client_id: %v",c.config.ID,)
+				break loop
+			case <-time.After(c.config.LoopPeriod):
+		}
 	}
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)

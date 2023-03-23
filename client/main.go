@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -107,6 +110,10 @@ func main() {
 		LoopPeriod:    v.GetDuration("loop.period"),
 	}
 
+	// Create a channel that is notified on SIGTERM
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+
 	client := common.NewClient(clientConfig)
-	client.StartClientLoop()
+	client.StartClientLoop(sigChan)
 }
