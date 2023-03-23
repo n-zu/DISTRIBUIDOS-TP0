@@ -41,6 +41,17 @@ services:
     volumes:
       - ./client/config.yaml:/config.yaml
 
+  healthcheck:
+    container_name: healthcheck
+    image: alpine:latest
+    entrypoint: ["/bin/sh", "./healthcheck.sh"]
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./healthcheck.sh:/healthcheck.sh
+
 networks:
   testing_net:
     ipam:

@@ -40,6 +40,19 @@ for i in range(clients):
 '''
 
 yaml += '''
+  healthcheck:
+    container_name: healthcheck
+    image: alpine:latest
+    entrypoint: ["/bin/sh", "./healthcheck.sh"]
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./healthcheck.sh:/healthcheck.sh
+'''
+
+yaml += '''
 networks:
   testing_net:
     ipam:

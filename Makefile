@@ -37,3 +37,8 @@ down:
 logs:
 	docker compose -f docker-compose-dev.yaml logs -f
 .PHONY: logs
+
+du:
+	$(MAKE) down
+	$(MAKE) up
+.PHONY: du
