@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 import sys
+from .utils import Bet, store_bets
 
 
 class Server:
@@ -39,7 +40,6 @@ class Server:
         After client's communication finishes, servers starts to accept new connections again
         """
 
-        # TODO: Modify this program to handle signal to graceful shutdown the server when multithreading
         while True:
             client_sock = self.__accept_new_connection()
             self.clients.append(client_sock)
@@ -47,20 +47,30 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
+        Reads bet data from a specific client socket stores it and closes the socket
 
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
+            msg = b''
+            while True:
+                chunk = client_sock.recv(1024)
+                if not chunk:
+                    break
+                msg += chunk
+            msg = msg.rstrip().decode('utf-8')
             addr = client_sock.getpeername()
             logging.info(
                 f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
-        except OSError as e:
+
+            bet = Bet(*msg.split(','))
+            store_bets([bet])
+            logging.info(
+                f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+
+            client_sock.sendall("{}\n".format(bet.number).encode('utf-8'))
+        except Exception as e:
             logging.error(
                 "action: receive_message | result: fail | error: {e}")
         finally:

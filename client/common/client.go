@@ -28,17 +28,6 @@ type BetData struct {
 	Number 			string
 }
 
-func formatBetData(betData BetData) string {
-	return fmt.Sprintf(
-		"%s,%s,%s,%s,%s\n",
-		betData.Name,
-		betData.LastName,
-		betData.Document,
-		betData.BirthDate,
-		betData.Number,
-	)
-}
-
 // Client Entity that encapsulates how
 type Client struct {
 	config ClientConfig
@@ -54,6 +43,18 @@ func NewClient(config ClientConfig, betData BetData) *Client {
 		betData: betData,
 	}
 	return client
+}
+
+func composeMessage(id string, betData BetData) string {
+	return fmt.Sprintf(
+		"%s,%s,%s,%s,%s,%s\n",
+		id,
+		betData.Name,
+		betData.LastName,
+		betData.Document,
+		betData.BirthDate,
+		betData.Number,
+	)
 }
 
 // CreateClientSocket Initializes client socket. In case of
@@ -88,17 +89,16 @@ loop:
 	*/
 		c.createClientSocket()
 
-		io.WriteString(c.conn, formatBetData(c.betData))
+		io.WriteString(c.conn, composeMessage(c.config.ID,c.betData))
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		// msgID++
+
+		if err == nil || msg != c.betData.Number {
+			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", c.betData.Document, c.betData.Number, )
+		} else {
+			log.Infof("action: apuesta_enviada | result: fail | dni: %v | numero: %v", c.betData.Document, c.betData.Number, )
+		} 
+			
 		c.conn.Close()
-		
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v", c.config.ID, err,)
-			log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
-			return
-		}
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v", c.config.ID, msg, )
 		log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
 /*
 		select {
@@ -115,3 +115,4 @@ loop:
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 	*/
 }
+
