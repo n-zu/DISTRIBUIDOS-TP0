@@ -90,6 +90,21 @@ func PrintConfig(v *viper.Viper) {
     )
 }
 
+// Get bet data from environment variables
+func GetBetData() common.BetData {
+	data := common.BetData{
+		Name: os.Getenv("NOMBRE"),
+		LastName:  os.Getenv("APELLIDO"),
+		Document: os.Getenv("DOCUMENTO"),
+		BirthDate: os.Getenv("NACIMIENTO"),
+		Number : os.Getenv("NUMERO"),
+	}
+
+	// print bet data and return it
+	fmt.Printf("------------------------------\n bet data: %v\n------------------------------\n", data)
+	return data
+} 
+
 func main() {
 	v, err := InitConfig()
 	if err != nil {
@@ -114,6 +129,7 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 
-	client := common.NewClient(clientConfig)
+	betData := GetBetData()
+	client := common.NewClient(clientConfig, betData)
 	client.StartClientLoop(sigChan)
 }

@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 	"os"
+	"io"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -18,17 +19,39 @@ type ClientConfig struct {
 	LoopPeriod    time.Duration
 }
 
+// BetData Data used to bet
+type BetData struct {
+	Name 				string
+	LastName 		string
+	Document 		string
+	BirthDate 	string
+	Number 			string
+}
+
+func formatBetData(betData BetData) string {
+	return fmt.Sprintf(
+		"%s,%s,%s,%s,%s\n",
+		betData.Name,
+		betData.LastName,
+		betData.Document,
+		betData.BirthDate,
+		betData.Number,
+	)
+}
+
 // Client Entity that encapsulates how
 type Client struct {
 	config ClientConfig
+	betData BetData
 	conn   net.Conn
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
-func NewClient(config ClientConfig) *Client {
+func NewClient(config ClientConfig, betData BetData) *Client {
 	client := &Client{
 		config: config,
+		betData: betData,
 	}
 	return client
 }
@@ -53,25 +76,21 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(sigChan chan os.Signal) {
+	
+	/*
 	// autoincremental msgID to identify every message sent
 	msgID := 1
-
 loop:
 	// Send messages if the loopLapse threshold has not been surpassed
 	for timeout := time.After(c.config.LoopLapse); ; {
 
 		// Create the connection the server in every loop iteration. Send an
+	*/
 		c.createClientSocket()
 
-		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
+		io.WriteString(c.conn, formatBetData(c.betData))
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		msgID++
+		// msgID++
 		c.conn.Close()
 		
 		if err != nil {
@@ -81,7 +100,7 @@ loop:
 		}
 		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v", c.config.ID, msg, )
 		log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
-
+/*
 		select {
 			case <-timeout:
 				log.Infof("action: timeout_detected | result: success | client_id: %v",c.config.ID,)
@@ -94,4 +113,5 @@ loop:
 	}
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	*/
 }
