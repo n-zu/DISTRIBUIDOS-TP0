@@ -2,7 +2,8 @@ import socket
 import logging
 import signal
 import sys
-from .utils import Bet, store_bets
+from .utils import store_bets
+from .bets import receive_bet, respond_bet
 
 
 class Server:
@@ -20,7 +21,6 @@ class Server:
     def __signal_handler(self, signum, stack):
         """
         Signal handler to gracefully shutdown the server
-
         """
         logging.info(
             f"action: signal_handler | result: success | signal: {signum}")
@@ -53,23 +53,11 @@ class Server:
         client socket will also be closed
         """
         try:
-            msg = b''
-            while True:
-                chunk = client_sock.recv(1024)
-                if not chunk:
-                    break
-                msg += chunk
-            msg = msg.rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
-            logging.info(
-                f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-
-            bet = Bet(*msg.split(','))
+            bet = receive_bet(client_sock)
             store_bets([bet])
             logging.info(
                 f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-
-            client_sock.sendall("{}\n".format(bet.number).encode('utf-8'))
+            respond_bet(client_sock, bet)
         except Exception as e:
             logging.error(
                 "action: receive_message | result: fail | error: {e}")
