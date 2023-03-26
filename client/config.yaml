@@ -6,3 +6,6 @@ loop:
   period: "5s"
 log:
   level: "info"
+data:
+  file: "./agency.csv"
+  batchSize: 10

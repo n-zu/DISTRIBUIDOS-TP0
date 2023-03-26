@@ -6,6 +6,7 @@ import (
 	"time"
 	"os"
 	"os/signal"
+	"encoding/csv"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -38,6 +39,8 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "lapse")
 	v.BindEnv("log", "level")
+	v.BindEnv("data", "file")
+	v.BindEnv("data", "batchSize")
 
 	// Try to read configuration from config file. If config file
 	// does not exists then ReadInConfig will fail but configuration
@@ -90,20 +93,33 @@ func PrintConfig(v *viper.Viper) {
     )
 }
 
-// Get bet data from environment variables
-func GetBetData() common.BetData {
-	data := common.BetData{
-		Name: os.Getenv("NOMBRE"),
-		LastName:  os.Getenv("APELLIDO"),
-		Document: os.Getenv("DOCUMENTO"),
-		BirthDate: os.Getenv("NACIMIENTO"),
-		Number : os.Getenv("NUMERO"),
+// Returns a function that takes the amount of lines to read from file as parameter and returns them as a string array
+// If there are no more lines to read, the function returns an empty array and closes the file if open
+func GetGetBetData(fileName string, id string) func(int) []string {
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Could not open file %s: %s", fileName, err)
 	}
+	log.Debugf("action: open_file %v | result: success | client_id: %v", fileName, id)
+	reader := csv.NewReader(file)
 
-	// print bet data and return it
-	fmt.Printf("------------------------------\n bet data: %v\n------------------------------\n", data)
-	return data
-} 
+	return func(lines int) []string {
+		
+		data := make([]string, 0, lines)
+		for i := 0; i < lines; i++ {
+			line, err := reader.Read()
+			if err != nil {
+				// If there are no more lines to read, close the file and return an empty array
+				file.Close()
+				log.Debugf("action: close_file %v | result: success | client_id: %v", fileName, id)
+				return data
+			}
+			data = append(data, line...)
+		}
+		return data
+
+	}
+}
 
 func main() {
 	v, err := InitConfig()
@@ -123,13 +139,14 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopLapse:     v.GetDuration("loop.lapse"),
 		LoopPeriod:    v.GetDuration("loop.period"),
+		BatchSize: 		 v.GetInt("data.batchSize"),
 	}
 
 	// Create a channel that is notified on SIGTERM
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 
-	betData := GetBetData()
-	client := common.NewClient(clientConfig, betData)
+	getBetData := GetGetBetData(v.GetString("data.file"), clientConfig.ID)
+	client := common.NewClient(clientConfig, getBetData)
 	client.StartClientLoop(sigChan)
 }

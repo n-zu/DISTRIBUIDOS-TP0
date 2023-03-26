@@ -20,17 +20,13 @@ services:
     environment:
       - CLI_ID=1
       - CLI_LOG_LEVEL=DEBUG
-      - NOMBRE=Santiago Lionel
-      - APELLIDO=Lorca
-      - DOCUMENTO=30904465
-      - NACIMIENTO=1999-03-17
-      - NUMERO=7574
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/agency-1.csv:/agency.csv
 
   client2:
     container_name: client2
@@ -39,17 +35,13 @@ services:
     environment:
       - CLI_ID=2
       - CLI_LOG_LEVEL=DEBUG
-      - NOMBRE=Alejandro
-      - APELLIDO=Perez
-      - DOCUMENTO=25654891
-      - NACIMIENTO=1840-12-07
-      - NUMERO=1213
     networks:
       - testing_net
     depends_on:
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/agency-2.csv:/agency.csv
 
 networks:
   testing_net:

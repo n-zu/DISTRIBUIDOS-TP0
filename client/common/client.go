@@ -14,21 +14,22 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopLapse     time.Duration
 	LoopPeriod    time.Duration
+	BatchSize     int
 }
 
 // Client Entity that encapsulates how
 type Client struct {
 	config ClientConfig
-	betData BetData
+	getBetData func(int) []string
 	conn   net.Conn
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
-func NewClient(config ClientConfig, betData BetData) *Client {
+func NewClient(config ClientConfig, getBetData func(int) []string) *Client {
 	client := &Client{
 		config: config,
-		betData: betData,
+		getBetData: getBetData,
 	}
 	return client
 }
@@ -53,8 +54,16 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(sigChan chan os.Signal) {
+
+	for {
+		betData := c.getBetData(c.config.BatchSize)
+		if len(betData) == 0 {
+			break
+		}
+		log.Infof("Read Batch: %v",betData )
+	}
 	
-		c.createClientSocket()
+		/*c.createClientSocket()
 
 		msg, err := sendBets(c.conn, c.config.ID, c.betData)
 
@@ -66,5 +75,6 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 			
 		c.conn.Close()
 		log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
+		*/
 }
 
