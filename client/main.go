@@ -37,7 +37,6 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("id")
 	v.BindEnv("server", "address")
 	v.BindEnv("loop", "period")
-	v.BindEnv("loop", "lapse")
 	v.BindEnv("log", "level")
 	v.BindEnv("data", "file")
 	v.BindEnv("data", "batchSize")
@@ -52,10 +51,6 @@ func InitConfig() (*viper.Viper, error) {
 	}
 
 	// Parse time.Duration variables and return an error if those variables cannot be parsed
-	if _, err := time.ParseDuration(v.GetString("loop.lapse")); err != nil {
-		return nil, errors.Wrapf(err, "Could not parse CLI_LOOP_LAPSE env var as time.Duration.")
-	}
-
 	if _, err := time.ParseDuration(v.GetString("loop.period")); err != nil {
 		return nil, errors.Wrapf(err, "Could not parse CLI_LOOP_PERIOD env var as time.Duration.")
 	}
@@ -138,7 +133,6 @@ func main() {
 	clientConfig := common.ClientConfig{
 		ServerAddress: v.GetString("server.address"),
 		ID:            v.GetString("id"),
-		LoopLapse:     v.GetDuration("loop.lapse"),
 		LoopPeriod:    v.GetDuration("loop.period"),
 		BatchSize: 		 v.GetInt("data.batchSize"),
 	}

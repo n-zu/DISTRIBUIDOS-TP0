@@ -43,9 +43,29 @@ func sendBets( conn net.Conn, id string, betData []string) (string, error) {
 	return msg, err
 }
 
+func openSendBets(conn net.Conn, id string) {
+	OPEN_MSG := "BETS"
+	binary.Write(conn, binary.BigEndian, uint16(len(OPEN_MSG)))
+	io.WriteString(conn, OPEN_MSG)
+}
+
 func closeSendBets(conn net.Conn, id string) {
 	CLOSE_MSG := "CLOSE"
 	binary.Write(conn, binary.BigEndian, uint16(len(CLOSE_MSG)))
 	io.WriteString(conn, CLOSE_MSG)
 	conn.Close()
+}
+
+func askForWinners(conn net.Conn, id string) (string, error){
+	ASK_MSG := "ASK"
+	binary.Write(conn, binary.BigEndian, uint16(len(ASK_MSG)))
+	io.WriteString(conn, ASK_MSG)
+	msg, err := bufio.NewReader(conn).ReadString('\n')
+	msg = strings.TrimSpace(msg)
+
+	if err == nil && msg == "REFUSE" {
+		return "", errors.New("Server refused")
+	}
+
+	return msg, err
 }

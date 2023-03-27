@@ -3,7 +3,7 @@ import logging
 import signal
 import sys
 from .utils import store_bets
-from .bets import receive_bets, respond_bet
+from .bets import receive_bets, send_msg, receive_msg, respond_winners
 
 
 class Server:
@@ -45,13 +45,7 @@ class Server:
             self.clients.append(client_sock)
             self.__handle_client_connection(client_sock)
 
-    def __handle_client_connection(self, client_sock):
-        """
-        Reads bet data from a specific client socket stores it and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
-        """
+    def __handle_client_sending_bets(self, client_sock):
         try:
             while True:
                 bets = receive_bets(client_sock)
@@ -62,12 +56,28 @@ class Server:
                 bet_numbers = [bet.number for bet in bets]
                 logging.info(
                     f'action: apuestas_almacenadas | result: success | {bet_numbers}')
-                respond_bet(client_sock, "OK")
+                send_msg(client_sock, "OK")
         except Exception as e:
             logging.error(
                 "action: receive_message | result: fail | error: "+str(e))
 
-            respond_bet(client_sock, "ERROR")
+            send_msg(client_sock, "ERROR")
+
+    def __handle_client_asking_for_winner(self, client_sock):
+        respond_winners(client_sock)
+
+    def __handle_client_connection(self, client_sock):
+        try:
+            query_type = receive_msg(client_sock)
+            if query_type == 'BETS':
+                logging.info('Query: BETS')
+                self.__handle_client_sending_bets(client_sock)
+            if query_type == 'ASK':
+                logging.info('[Query: ASK')
+                self.__handle_client_asking_for_winner(client_sock)
+        except Exception as e:
+            logging.error(
+                "action: parse_connection | result: fail | error: "+str(e))
         finally:
             client_sock.close()
             self.clients.remove(client_sock)

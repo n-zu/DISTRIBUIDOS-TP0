@@ -12,7 +12,6 @@ import (
 type ClientConfig struct {
 	ID            string
 	ServerAddress string
-	LoopLapse     time.Duration
 	LoopPeriod    time.Duration
 	BatchSize     int
 }
@@ -52,10 +51,11 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop(sigChan chan os.Signal) {
-
+// StartSendBets Starts sending bets to the server in a loop
+func (c *Client) startSendBets(sigChan chan os.Signal) {
 	c.createClientSocket()
+
+	openSendBets(c.conn, c.config.ID)
 
 	loop: for {
 		betData := c.getBetData(c.config.BatchSize)
@@ -80,5 +80,37 @@ func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 
 	closeSendBets(c.conn, c.config.ID)
 	log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
+}
+
+// StartAskForWinners Starts asking for winners to the server in a loop
+func (c *Client) startAskForWinners(sigChan chan os.Signal) {
+
+	loop: for {
+		select {
+			case <- sigChan:
+				break loop
+			case <- time.After(c.config.LoopPeriod):
+		}
+		c.createClientSocket()
+
+		msg, err := askForWinners(c.conn, c.config.ID)
+
+		if err == nil {
+			log.Infof("action: ganadores_solicitados | result: success | %v", msg)
+			c.conn.Close()
+			break loop
+		} else {
+			log.Infof("action: ganadores_solicitados | result: fail | %v", err.Error() )
+		}
+
+		c.conn.Close()
+	}
+}
+
+// StartClientLoop sends bets and asks for winners
+func (c *Client) StartClientLoop(sigChan chan os.Signal) {
+
+	c.startSendBets(sigChan)
+	c.startAskForWinners(sigChan)
 }
 
