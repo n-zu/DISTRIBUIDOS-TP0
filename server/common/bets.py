@@ -54,28 +54,29 @@ finished_clients = set()
 all_clients_finished = False
 
 
-def can_respond_winners(id, clients):
-    global finished_clients
-    global all_clients_finished
-    
-    if all_clients_finished:
-        return True
+def can_respond_winners(id, clients, finished_clients_lock):
+    with finished_clients_lock:
+        global finished_clients
+        global all_clients_finished
 
-    finished_clients.add(id)
+        if all_clients_finished:
+            return True
 
-    if len(finished_clients) >= clients:
-        all_clients_finished = True
-        logging.info(
-            f'action: sorteo | result: success')
+        finished_clients.add(id)
+
+        if len(finished_clients) >= clients:
+            all_clients_finished = True
+            logging.info(
+                f'action: sorteo | result: success')
 
     return all_clients_finished
 
 
-def respond_winners(client_sock, clients, get_winners):
+def respond_winners(client_sock, clients, get_winners, finished_clients_lock):
     try:
         id = receive_msg(client_sock)
 
-        if can_respond_winners(id, clients):
+        if can_respond_winners(id, clients, finished_clients_lock):
             winners = get_winners(id)
             winners = stringify_winners(winners)
             send_msg(client_sock, winners)

@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 import sys
+import multiprocessing
 from .utils import store_bets, load_bets, has_won
 from .bets import receive_bets, send_msg, receive_msg, respond_winners
 
@@ -16,6 +17,14 @@ class Server:
         self.client_socks = []
         self.winners = None
 
+        self.processes = []
+        manager = multiprocessing.Manager()
+        self.locks = {
+            'store_bets': manager.Lock(),
+            'check_winners': manager.Lock(),
+            'finished_clients': manager.Lock()
+        }
+
         # Define signal handler to gracefully shutdown the server
         signal.signal(signal.SIGINT, self.__signal_handler)
         signal.signal(signal.SIGTERM, self.__signal_handler)
@@ -28,9 +37,9 @@ class Server:
             f"action: signal_handler | result: success | signal: {signum}")
         self._server_socket.close()
         logging.debug(f'action: close listener socket | result: success')
-        for sock in self.client_socks:
-            sock.close()
-            logging.debug(f'action: close client socket | result: success')
+
+        for process in self.processes:
+            process.join()
 
         sys.exit(0)
 
@@ -44,16 +53,20 @@ class Server:
 
         while True:
             client_sock = self.__accept_new_connection()
-            self.client_socks.append(client_sock)
-            self.__handle_client_connection(client_sock)
+            proc = multiprocessing.Process(
+                target=self.__handle_client_connection, args=(client_sock, self.locks))
+            proc.start()
+            self.processes.append(proc)
 
-    def __handle_client_sending_bets(self, client_sock):
+    def __handle_client_sending_bets(self, client_sock, locks):
         try:
             while True:
                 bets = receive_bets(client_sock)
                 if not bets:
                     break
-                store_bets(bets)
+
+                with locks['store_bets']:
+                    store_bets(bets)
 
                 bet_numbers = [bet.number for bet in bets]
                 logging.info(
@@ -73,31 +86,32 @@ class Server:
             f'action: set_winners_from_store | result: success | winners: {len(winners)}')
 
     def __get_winners(self, id):
-        if not self.winners:
-            self.__set_winners_from_store()
+        with self.locks['check_winners']:
+            if not self.winners:
+                self.__set_winners_from_store()
 
         # filter lines that start with id
         winners = [bet for bet in self.winners if int(bet.agency) == int(id)]
         return winners
 
-    def __handle_client_asking_for_winner(self, client_sock):
-        respond_winners(client_sock, self.clients, self.__get_winners)
+    def __handle_client_asking_for_winner(self, client_sock, locks):
+        respond_winners(client_sock, self.clients,
+                        self.__get_winners, locks["finished_clients"])
 
-    def __handle_client_connection(self, client_sock):
+    def __handle_client_connection(self, client_sock, locks):
         try:
             query_type = receive_msg(client_sock)
             if query_type == 'BETS':
                 logging.info('Query: BETS')
-                self.__handle_client_sending_bets(client_sock)
+                self.__handle_client_sending_bets(client_sock, locks)
             if query_type == 'ASK':
                 logging.info('[Query: ASK')
-                self.__handle_client_asking_for_winner(client_sock)
+                self.__handle_client_asking_for_winner(client_sock, locks)
         except Exception as e:
             logging.error(
                 "action: parse_connection | result: fail | error: "+str(e))
         finally:
             client_sock.close()
-            self.client_socks.remove(client_sock)
 
     def __accept_new_connection(self):
         """
