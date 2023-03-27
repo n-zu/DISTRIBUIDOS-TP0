@@ -3,7 +3,7 @@ import logging
 import signal
 import sys
 from .utils import store_bets
-from .bets import receive_bet, respond_bet
+from .bets import receive_bets, respond_bet
 
 
 class Server:
@@ -53,14 +53,21 @@ class Server:
         client socket will also be closed
         """
         try:
-            bet = receive_bet(client_sock)
-            store_bets([bet])
-            logging.info(
-                f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-            respond_bet(client_sock, bet)
+            while True:
+                bets = receive_bets(client_sock)
+                if not bets:
+                    break
+                store_bets(bets)
+
+                bet_numbers = [bet.number for bet in bets]
+                logging.info(
+                    f'action: apuestas_almacenadas | result: success | {bet_numbers}')
+                respond_bet(client_sock, "OK")
         except Exception as e:
             logging.error(
-                "action: receive_message | result: fail | error: {e}")
+                "action: receive_message | result: fail | error: "+str(e))
+
+            respond_bet(client_sock, "ERROR")
         finally:
             client_sock.close()
             self.clients.remove(client_sock)

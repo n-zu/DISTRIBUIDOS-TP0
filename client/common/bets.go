@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"io"
+	"strings"
 	"errors"
 	"encoding/binary"
 )
@@ -18,30 +19,33 @@ type BetData struct {
 	Number 			string
 }
 
-func composeMessage(id string, betData BetData) string {
-	return fmt.Sprintf(
-		"%s,%s,%s,%s,%s,%s\n",
-		id,
-		betData.Name,
-		betData.LastName,
-		betData.Document,
-		betData.BirthDate,
-		betData.Number,
-	)
-}
+
 
 // SendBets Sends a bet to the server and checks response
-func sendBets( conn net.Conn, id string, betData BetData) (string, error) {
+func sendBets( conn net.Conn, id string, betData []string) (string, error) {
 
-	message := composeMessage(id, betData)
+	message := strings.Join(betData, ";")
 	len := len(message)
 	if len > 8192 { // Max 8kb
 		return "", errors.New("Message too long")
 	}
 
-	// send message length and then message 
+	// Send message length and then message 
 	binary.Write(conn, binary.BigEndian, uint16(len))
-	io.WriteString(conn, composeMessage(id, betData))
+	io.WriteString(conn, message)
 	msg, err := bufio.NewReader(conn).ReadString('\n')
+	msg = strings.TrimSpace(msg)
+
+	if err == nil && msg != "OK" {
+		return "", errors.New(fmt.Sprintf("Unexpected response: %v", msg))
+	}
+
 	return msg, err
+}
+
+func closeSendBets(conn net.Conn, id string) {
+	CLOSE_MSG := "CLOSE"
+	binary.Write(conn, binary.BigEndian, uint16(len(CLOSE_MSG)))
+	io.WriteString(conn, CLOSE_MSG)
+	conn.Close()
 }

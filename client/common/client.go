@@ -55,26 +55,30 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(sigChan chan os.Signal) {
 
-	for {
+	c.createClientSocket()
+
+	loop: for {
 		betData := c.getBetData(c.config.BatchSize)
 		if len(betData) == 0 {
 			break
 		}
-		log.Infof("Read Batch: %v",betData )
-	}
-	
-		/*c.createClientSocket()
 
-		msg, err := sendBets(c.conn, c.config.ID, c.betData)
+		_, err := sendBets(c.conn, c.config.ID, betData)
 
-		if err == nil || msg != c.betData.Number {
-			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", c.betData.Document, c.betData.Number, )
+		if err == nil {
+			log.Infof("action: apuestas_enviadas | result: success " )
 		} else {
-			log.Infof("action: apuesta_enviada | result: fail | dni: %v | numero: %v", c.betData.Document, c.betData.Number, )
-		} 
-			
-		c.conn.Close()
-		log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
-		*/
+			log.Infof("action: apuestas_enviadas | result: fail | %v", err.Error() )
+		}
+
+		select {
+			case <- sigChan:
+				break loop
+			default:
+		}
+	}
+
+	closeSendBets(c.conn, c.config.ID)
+	log.Debugf("action: close_connection | result: success | client_id: %v", c.config.ID)
 }
 

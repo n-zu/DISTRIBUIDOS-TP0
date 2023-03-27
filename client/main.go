@@ -112,9 +112,10 @@ func GetGetBetData(fileName string, id string) func(int) []string {
 				// If there are no more lines to read, close the file and return an empty array
 				file.Close()
 				log.Debugf("action: close_file %v | result: success | client_id: %v", fileName, id)
-				return data
+				return data[:i] // Return only the filled elements of data
 			}
-			data = append(data, line...)
+			datum := id + ", " + strings.Join(line, ", ")
+			data = append(data, datum)
 		}
 		return data
 
