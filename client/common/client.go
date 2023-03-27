@@ -93,14 +93,14 @@ func (c *Client) startAskForWinners(sigChan chan os.Signal) {
 		}
 		c.createClientSocket()
 
-		msg, err := askForWinners(c.conn, c.config.ID)
+		winners, err := askForWinners(c.conn, c.config.ID)
 
 		if err == nil {
-			log.Infof("action: ganadores_solicitados | result: success | %v", msg)
+			log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v %v", len(winners), winners)
 			c.conn.Close()
 			break loop
 		} else {
-			log.Infof("action: ganadores_solicitados | result: fail | %v", err.Error() )
+			log.Infof("action: consulta_ganadores | result: fail | %v", err.Error() )
 		}
 
 		c.conn.Close()

@@ -56,16 +56,18 @@ func closeSendBets(conn net.Conn, id string) {
 	conn.Close()
 }
 
-func askForWinners(conn net.Conn, id string) (string, error){
+func askForWinners(conn net.Conn, id string) ([]string, error){
 	ASK_MSG := "ASK"
 	binary.Write(conn, binary.BigEndian, uint16(len(ASK_MSG)))
 	io.WriteString(conn, ASK_MSG)
+	binary.Write(conn, binary.BigEndian, uint16(len(id)))
+	io.WriteString(conn, id)
 	msg, err := bufio.NewReader(conn).ReadString('\n')
 	msg = strings.TrimSpace(msg)
 
 	if err == nil && msg == "REFUSE" {
-		return "", errors.New("Server refused")
+		return nil, errors.New("Server refused")
 	}
-
-	return msg, err
+	
+	return strings.Split(msg, ","), err
 }
