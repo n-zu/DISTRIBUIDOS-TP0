@@ -20,7 +20,6 @@ type BetData struct {
 }
 
 
-
 // SendBets Sends a bet to the server and checks response
 func sendBets( conn net.Conn, id string, betData []string) (string, error) {
 

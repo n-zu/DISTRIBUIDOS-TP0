@@ -3,12 +3,19 @@ from .utils import Bet
 
 
 def parse_bet(bet):
+    """
+    Parses a string with a single bet
+    which is a comma separated list of fields
+    """
     bet = bet.split(',')
     bet = [field.strip() for field in bet]
     return Bet(*bet)
 
 
 def parse_bets(bets):
+    """
+    Parses a string with multiple bets separated by ';'
+    """
     bets = bets.split(';')
     bets = filter(lambda line: line != '', bets)
 
@@ -16,6 +23,9 @@ def parse_bets(bets):
 
 
 def receive_bets(client_sock):
+    """
+    Reads bet data from a specific client socket
+    """
 
     # receive message length as uint16 and message of that length
     len = int.from_bytes(client_sock.recv(2), byteorder='big')
@@ -31,6 +41,9 @@ def receive_bets(client_sock):
 
 
 def respond_bet(client_sock, response):
+    """
+    Responds to a client with the bet number
+    """
     try:
         client_sock.send("{}\n".format(response).encode('utf-8'))
     except Exception as e:
