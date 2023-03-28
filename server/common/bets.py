@@ -50,33 +50,28 @@ def send_msg(client_sock, response):
             f'action: send_message | result: fail | error: {str(e)}')
 
 
-finished_clients = set()
-all_clients_finished = False
-
-
-def can_respond_winners(id, clients, finished_clients_lock):
+def can_respond_winners(id, clients, finished_clients_lock, raffle_data):
     with finished_clients_lock:
-        global finished_clients
-        global all_clients_finished
 
-        if all_clients_finished:
+        if raffle_data["all_clients_finished"]:
             return True
 
-        finished_clients.add(id)
+        if id not in raffle_data["finished_clients"]:
+            raffle_data["finished_clients"] = raffle_data["finished_clients"] + [id]
 
-        if len(finished_clients) >= clients:
-            all_clients_finished = True
+        if len(raffle_data["finished_clients"]) >= clients:
+            raffle_data["all_clients_finished"] = True
             logging.info(
                 f'action: sorteo | result: success')
 
-    return all_clients_finished
+    return raffle_data["all_clients_finished"]
 
 
-def respond_winners(client_sock, clients, get_winners, finished_clients_lock):
+def respond_winners(client_sock, clients, get_winners, finished_clients_lock, raffle_data):
     try:
         id = receive_msg(client_sock)
 
-        if can_respond_winners(id, clients, finished_clients_lock):
+        if can_respond_winners(id, clients, finished_clients_lock, raffle_data):
             winners = get_winners(id)
             winners = stringify_winners(winners)
             send_msg(client_sock, winners)

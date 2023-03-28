@@ -15,7 +15,6 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self.clients = int(clients)
         self.client_socks = []
-        self.winners = None
 
         self.processes = []
         manager = multiprocessing.Manager()
@@ -24,6 +23,11 @@ class Server:
             'check_winners': manager.Lock(),
             'finished_clients': manager.Lock()
         }
+        self.raffle_data = manager.dict({
+            'finished_clients': [],
+            'all_clients_finished': False,
+            'winners': None
+        })
 
         # Define signal handler to gracefully shutdown the server
         signal.signal(signal.SIGINT, self.__signal_handler)
@@ -81,22 +85,23 @@ class Server:
     def __set_winners_from_store(self):
         bets = load_bets()
         winners = [bet for bet in bets if has_won(bet)]
-        self.winners = winners
+        self.raffle_data["winners"] = winners
         logging.info(
             f'action: set_winners_from_store | result: success | winners: {len(winners)}')
 
     def __get_winners(self, id):
         with self.locks['check_winners']:
-            if not self.winners:
+            if not self.raffle_data["winners"]:
                 self.__set_winners_from_store()
 
         # filter lines that start with id
-        winners = [bet for bet in self.winners if int(bet.agency) == int(id)]
+        winners = [bet for bet in self.raffle_data["winners"]
+                   if int(bet.agency) == int(id)]
         return winners
 
     def __handle_client_asking_for_winner(self, client_sock, locks):
         respond_winners(client_sock, self.clients,
-                        self.__get_winners, locks["finished_clients"])
+                        self.__get_winners, locks["finished_clients"], self.raffle_data)
 
     def __handle_client_connection(self, client_sock, locks):
         try:
@@ -105,7 +110,7 @@ class Server:
                 logging.info('Query: BETS')
                 self.__handle_client_sending_bets(client_sock, locks)
             if query_type == 'ASK':
-                logging.info('[Query: ASK')
+                logging.info('Query: ASK')
                 self.__handle_client_asking_for_winner(client_sock, locks)
         except Exception as e:
             logging.error(
