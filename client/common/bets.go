@@ -20,7 +20,6 @@ type BetData struct {
 }
 
 
-
 // SendBets Sends a bet to the server and checks response
 func sendBets( conn net.Conn, id string, betData []string) (string, error) {
 
@@ -43,12 +42,15 @@ func sendBets( conn net.Conn, id string, betData []string) (string, error) {
 	return msg, err
 }
 
+// OpenSendBets notifies the server that the client is ready to send bets
 func openSendBets(conn net.Conn, id string) {
 	OPEN_MSG := "BETS"
 	binary.Write(conn, binary.BigEndian, uint16(len(OPEN_MSG)))
 	io.WriteString(conn, OPEN_MSG)
 }
 
+// CloseSendBets Closes notifies the server that the client has finished sending bets
+// and closes the connection
 func closeSendBets(conn net.Conn, id string) {
 	CLOSE_MSG := "CLOSE"
 	binary.Write(conn, binary.BigEndian, uint16(len(CLOSE_MSG)))
@@ -56,6 +58,8 @@ func closeSendBets(conn net.Conn, id string) {
 	conn.Close()
 }
 
+// AskForWinners Asks the server for the winners
+// Returns a list of winners or an error
 func askForWinners(conn net.Conn, id string) ([]string, error){
 	ASK_MSG := "ASK"
 	binary.Write(conn, binary.BigEndian, uint16(len(ASK_MSG)))

@@ -36,7 +36,7 @@ class Server:
 
     def run(self):
         """
-        Dummy Server loop
+        Server loop
 
         Server that accept a new connections and establishes a communication with a client.
         After client's communication finishes, servers starts to accept new connections again
@@ -48,6 +48,9 @@ class Server:
             self.__handle_client_connection(client_sock)
 
     def __handle_client_sending_bets(self, client_sock):
+        """
+        Handle client sending bets in chunks
+        """
         try:
             while True:
                 bets = receive_bets(client_sock)
@@ -66,6 +69,9 @@ class Server:
             send_msg(client_sock, "ERROR")
 
     def __set_winners_from_store(self):
+        """
+        Set raffle winners checking stored bets
+        """
         bets = load_bets()
         winners = [bet for bet in bets if has_won(bet)]
         self.winners = winners
@@ -73,6 +79,10 @@ class Server:
             f'action: set_winners_from_store | result: success | winners: {len(winners)}')
 
     def __get_winners(self, id):
+        """
+        Get winners from store for a specific agency
+        Winners are only calculated once
+        """
         if not self.winners:
             self.__set_winners_from_store()
 
@@ -81,9 +91,23 @@ class Server:
         return winners
 
     def __handle_client_asking_for_winner(self, client_sock):
+        """
+        Handle client asking for winners
+        Responding with the winners of the bet if the raffle has already been done
+        Else respond with a REFUSE message
+        """
         respond_winners(client_sock, self.clients, self.__get_winners)
 
     def __handle_client_connection(self, client_sock):
+        """
+        Handle client connection
+        Receives a message from the client marking the type of query
+        - BETS: client is sending bets
+        - ASK: client is asking for winners
+
+        If a problem arises in the communication with the client, the
+        client socket will also be closed
+        """
         try:
             query_type = receive_msg(client_sock)
             if query_type == 'BETS':
