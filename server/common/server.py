@@ -47,7 +47,7 @@ class Server:
 
     def __handle_client_connection(self, client_sock):
         """
-        Reads bet data from a specific client socket stores it and closes the socket
+        Receives bet data from a client and stores it
 
         If a problem arises in the communication with the client, the
         client socket will also be closed

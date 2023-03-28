@@ -42,6 +42,8 @@ func sendBets( conn net.Conn, id string, betData []string) (string, error) {
 	return msg, err
 }
 
+// CloseSendBets Closes notifies the server that the client has finished sending bets
+// and closes the connection
 func closeSendBets(conn net.Conn, id string) {
 	CLOSE_MSG := "CLOSE"
 	binary.Write(conn, binary.BigEndian, uint16(len(CLOSE_MSG)))
