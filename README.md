@@ -55,6 +55,26 @@ Se deberá implementar un módulo de comunicación entre el cliente y el servido
   - Si finalizo la rifa, el servidor responde con un string con los documentos ganadores de la agencia del cliente, separados por coma ","
   - `REFUSE`: Indica que el servidor se niega a responder la consulta, ya que la rifa no finalizo.
 
+## Mecanismos de sincronización
+
+Mecanismos utilizados en el servidor para garantizar su correcta operación de modo concurrente.
+
+### Exclusión mutua
+
+Se utilizaron **Locks** para garantizar la exclusión mutua en las siguientes secciones críticas:
+
+- `store_bets`: No se debe llamar a la función `store_bets` mientras se está ejecutando la misma función en otro proceso.
+- `check_winners`: Se verifica si los ganadores fueron calculados, y si no lo fueron se calculan (cargando las apuestas desde el archivo y verificando una por una). Esta operación es atómica, de modo que solo se calcularan una vez.
+- `finished_clients`: Se verifica si todos los clientes terminaron de mandar apuestas, agregando al cliente que esta haciendo la consulta. Esta operación es atómica, para que no haya condiciones de carrera.
+
+### Memoria compartida
+
+Se utiliza un diccionario compartido para almacenar los siguientes datos:
+
+- `finished_clients`: Lista de ids de clientes que terminaron de enviar apuestas.
+- `all_clients_finished`: Indica si todos los clientes terminaron de enviar apuestas.
+- `winners`: Lista de apuestas ganadoras de la rifa.
+
 ## Instrucciones de uso
 
 El repositorio cuenta con un **Makefile** que posee encapsulado diferentes comandos utilizados recurrentemente en el proyecto en forma de targets. Los targets se ejecutan mediante la invocación de:
@@ -179,6 +199,6 @@ Podemos verificar la correcta modificación del archivo `bets.csv` ejecutando co
 Se espera que los alumnos realicen un _fork_ del presente repositorio para el desarrollo de los ejercicios.
 El _fork_ deberá contar con una sección de README que indique como ejecutar cada ejercicio.
 La Parte 2 requiere una sección donde se explique el [protocolo de comunicación](#protocolo-de-comunicación) implementado.
-La Parte 3 requiere una sección que expliquen los mecanismos de sincronización utilizados.
+La Parte 3 requiere una sección que expliquen los [mecanismos de sincronización](#mecanismos-de-sincronización) utilizados.
 
 Finalmente, se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección provistos [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
