@@ -3,6 +3,9 @@ from .utils import Bet
 
 
 def receive_bet(client_sock):
+    """
+    Reads bet data from a specific client socket
+    """
 
     # receive message length as uint16 and message of that length
     len = int.from_bytes(client_sock.recv(2), byteorder='big')
@@ -15,4 +18,7 @@ def receive_bet(client_sock):
 
 
 def respond_bet(client_sock, bet):
+    """
+    Responds to a client with the bet number
+    """
     client_sock.send("{}\n".format(bet.number).encode('utf-8'))

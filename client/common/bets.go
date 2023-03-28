@@ -18,6 +18,7 @@ type BetData struct {
 	Number 			string
 }
 
+// composeMessage Composes a string message to be sent to the server
 func composeMessage(id string, betData BetData) string {
 	return fmt.Sprintf(
 		"%s,%s,%s,%s,%s,%s\n",

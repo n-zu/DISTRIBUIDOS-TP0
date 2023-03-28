@@ -31,6 +31,11 @@ for i in range(clients):
     environment:
       - CLI_ID={i+1}
       - CLI_LOG_LEVEL=DEBUG
+      - NOMBRE=Santiago Lionel
+      - APELLIDO=Lorca
+      - DOCUMENTO=30904465
+      - NACIMIENTO=1999-03-17
+      - NUMERO=7574
     networks:
       - testing_net
     depends_on:
@@ -39,18 +44,6 @@ for i in range(clients):
       - ./client/config.yaml:/config.yaml
 '''
 
-yaml += '''
-  healthcheck:
-    container_name: healthcheck
-    image: alpine:latest
-    entrypoint: ["/bin/sh", "./healthcheck.sh"]
-    networks:
-      - testing_net
-    depends_on:
-      - server
-    volumes:
-      - ./healthcheck.sh:/healthcheck.sh
-'''
 
 yaml += '''
 networks:
