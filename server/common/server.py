@@ -44,6 +44,7 @@ class Server:
 
         for process in self.processes:
             process.join()
+            logging.debug(f'action: join process | result: success')
 
         sys.exit(0)
 
