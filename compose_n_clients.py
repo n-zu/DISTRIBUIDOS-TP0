@@ -37,20 +37,9 @@ for i in range(clients):
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/agency-{i+1}.csv:/agency.csv
 '''
 
-yaml += '''
-  healthcheck:
-    container_name: healthcheck
-    image: alpine:latest
-    entrypoint: ["/bin/sh", "./healthcheck.sh"]
-    networks:
-      - testing_net
-    depends_on:
-      - server
-    volumes:
-      - ./healthcheck.sh:/healthcheck.sh
-'''
 
 yaml += '''
 networks:

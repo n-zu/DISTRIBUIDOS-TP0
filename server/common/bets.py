@@ -3,7 +3,9 @@ from .utils import Bet
 
 
 def receive_msg(client_sock):
-    # receive message length as uint16 and message of that length
+    """
+    Reads a message from a specific client socket
+    """
     len = int.from_bytes(client_sock.recv(2), byteorder='big')
     msg = client_sock.recv(len).decode('utf-8').strip()
     addr = client_sock.getpeername()
@@ -14,12 +16,19 @@ def receive_msg(client_sock):
 
 
 def parse_bet(bet):
+    """
+    Parses a string with a single bet
+    which is a comma separated list of fields
+    """
     bet = bet.split(',')
     bet = [field.strip() for field in bet]
     return Bet(*bet)
 
 
 def parse_bets(bets):
+    """
+    Parses a string with multiple bets separated by ';'
+    """
     bets = bets.split(';')
     bets = filter(lambda line: line != '', bets)
 
@@ -27,12 +36,19 @@ def parse_bets(bets):
 
 
 def stringify_winners(bets):
+    """
+    Converts a list of bets to a string with the
+    document numbers of the bets separated by commas
+    """
     winners = [bet.document for bet in bets]
     winners = ','.join(winners)
     return winners
 
 
 def receive_bets(client_sock):
+    """
+    Reads bet data from a specific client socket
+    """
 
     msg = receive_msg(client_sock)
 
@@ -43,6 +59,9 @@ def receive_bets(client_sock):
 
 
 def send_msg(client_sock, response):
+    """
+    Sends a response to a specific client socket
+    """
     try:
         client_sock.send("{}\n".format(response).encode('utf-8'))
     except Exception as e:
@@ -51,6 +70,11 @@ def send_msg(client_sock, response):
 
 
 def can_respond_winners(id, clients, finished_clients_lock, raffle_data):
+    """
+    Verifies if the server can respond to a client
+    Taking note of the clients that have already responded
+    If all clients have responded, the server can respond to all
+    """
     with finished_clients_lock:
 
         if raffle_data["all_clients_finished"]:
@@ -68,6 +92,10 @@ def can_respond_winners(id, clients, finished_clients_lock, raffle_data):
 
 
 def respond_winners(client_sock, clients, get_winners, finished_clients_lock, raffle_data):
+    """
+    Responds to a client with the winners of the bet
+    if the raffle has already been done
+    """
     try:
         id = receive_msg(client_sock)
 
