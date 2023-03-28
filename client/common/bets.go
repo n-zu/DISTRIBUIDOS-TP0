@@ -73,5 +73,9 @@ func askForWinners(conn net.Conn, id string) ([]string, error){
 		return nil, errors.New("Server refused")
 	}
 	
+	if msg == "" {
+		return []string{}, err
+	}
+
 	return strings.Split(msg, ","), err
 }
