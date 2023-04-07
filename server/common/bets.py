@@ -1,13 +1,14 @@
 import logging
 from .utils import Bet
+from .com import recv_exact, send_all
 
 
 def receive_msg(client_sock):
     """
     Reads a message from a specific client socket
     """
-    len = int.from_bytes(client_sock.recv(2), byteorder='big')
-    msg = client_sock.recv(len).decode('utf-8').strip()
+    len = int.from_bytes(recv_exact(client_sock, 2), byteorder='big')
+    msg = recv_exact(client_sock, len).decode('utf-8').strip()
     addr = client_sock.getpeername()
     logging.info(
         f'action: receive_message | result: success | ip: {addr[0]}')
@@ -63,7 +64,7 @@ def send_msg(client_sock, response):
     Sends a response to a specific client socket
     """
     try:
-        client_sock.send("{}\n".format(response).encode('utf-8'))
+        send_all(client_sock, "{}\n".format(response).encode('utf-8'))
     except Exception as e:
         logging.error(
             f'action: send_message | result: fail | error: {str(e)}')
@@ -104,7 +105,7 @@ def respond_winners(client_sock, clients, get_winners, finished_clients_lock, ra
             winners = stringify_winners(winners)
             send_msg(client_sock, winners)
         else:
-            client_sock.send("{}\n".format("REFUSE").encode('utf-8'))
+            send_msg(client_sock, "REFUSE")
     except Exception as e:
         logging.error(
             f'action: send_message | result: fail | error: {str(e)}')
