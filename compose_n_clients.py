@@ -1,10 +1,11 @@
 import sys
 
-if len(sys.argv) != 2:
-    print("Usage: python3 compose_n_clients.py n")
+if len(sys.argv) != 3:
+    print("Usage: python3 compose_n_clients.py output_file n_clients")
     sys.exit(1)
 
-clients = int(sys.argv[1])
+output_file = int(sys.argv[1])
+clients = int(sys.argv[2])
 
 yaml = '''
 version: "3.9"
@@ -45,5 +46,5 @@ networks:
         - subnet: 172.25.125.0/24
 '''
 
-with open("docker-compose-dev.yaml", "w") as f:
+with open(output_file, "w") as f:
     f.write(yaml)
